@@ -4,6 +4,9 @@ use alloy_eips::eip6110::MAINNET_DEPOSIT_CONTRACT_ADDRESS;
 use alloy_hardforks::{EthereumChainHardforks, EthereumHardfork, EthereumHardforks, ForkCondition};
 use alloy_primitives::{address, Address};
 
+/// The chain ID of the Goat network.
+pub const GOAT_CHAIN_ID: u64 = 2345;
+
 /// A configuration object for [`super::EthBlockExecutor`]
 #[auto_impl::auto_impl(&, Arc)]
 pub trait EthExecutorSpec: EthereumHardforks {

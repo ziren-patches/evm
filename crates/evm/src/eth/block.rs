@@ -57,6 +57,8 @@ pub struct EthBlockExecutor<'a, Evm, Spec, R: ReceiptBuilder> {
     receipts: Vec<R::Receipt>,
     /// Total gas used by transactions in this block.
     gas_used: u64,
+    /// Chain ID.
+    chain_id: u64,
 }
 
 impl<'a, Evm, Spec, R> EthBlockExecutor<'a, Evm, Spec, R>
@@ -74,6 +76,7 @@ where
             system_caller: SystemCaller::new(spec.clone()),
             spec,
             receipt_builder,
+            chain_id: 0,
         }
     }
 }
@@ -151,6 +154,10 @@ where
         self.evm.db_mut().commit(state);
 
         Ok(gas_used)
+    }
+
+    fn set_chain_id(&mut self, chain_id: u64) {
+        self.chain_id = chain_id;
     }
 
     fn finish(

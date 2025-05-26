@@ -134,6 +134,9 @@ pub trait BlockExecutor {
 
         self.apply_post_execution_changes()
     }
+
+    /// Sets the chain ID for the executor.
+    fn set_chain_id(&mut self, _chain_id: u64) {}
 }
 
 /// A helper trait encapsulating the constraints on [`BlockExecutor`] produced by the
