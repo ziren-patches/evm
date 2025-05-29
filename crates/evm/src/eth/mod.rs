@@ -154,6 +154,9 @@ where
             max_fee_per_blob_gas: 0,
             tx_type: 0,
             authorization_list: Default::default(),
+            module: 0,
+            action: 0,
+            goat: None,
         };
 
         let mut gas_limit = tx.gas_limit;

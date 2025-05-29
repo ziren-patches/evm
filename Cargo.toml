@@ -41,19 +41,24 @@ alloy-op-evm = { version = "0.4.0", path = "crates/op-evm", default-features = f
 # alloy
 alloy-eip2124 = { version = "0.2", default-features = false }
 alloy-chains = { version = "0.2.0", default-features = false }
-alloy-eips = { version = "0.14", default-features = false }
-alloy-consensus = { version = "0.14", default-features = false }
+# alloy-eips = { version = "0.14.0", default-features = false }
+# alloy-consensus = { version = "0.14.0", default-features = false }
+alloy-eips = { path = "../alloy/crates/eips", default-features = false }
+alloy-consensus = { path = "../alloy/crates/consensus", default-features = false }
 alloy-primitives = { version = "1.0.0", default-features = false }
 alloy-sol-types = { version = "1.0.0", default-features = false }
 alloy-hardforks = { version = "0.2" }
 
 # op-alloy
 alloy-op-hardforks = { version = "0.2" }
-op-alloy-consensus = { version = "0.13", default-features = false }
+# op-alloy-consensus = { version = "0.13.0", default-features = false }
+op-alloy-consensus = { path = "../op-alloy/crates/consensus", default-features = false }
 
 # revm
-revm = { git = "https://github.com/zkMIPS-patches/revm", branch = "patch-22.0.0", default-features = false }
-op-revm = { git = "https://github.com/zkMIPS-patches/revm", branch = "patch-22.0.0", default-features = false }
+# revm = { git = "https://github.com/zkMIPS-patches/revm", branch = "patch-22.0.0", default-features = false }
+# op-revm = { git = "https://github.com/zkMIPS-patches/revm", branch = "patch-22.0.0", default-features = false }
+revm = { path = "../revm/crates/revm", default-features = false }
+op-revm = { path = "../revm/crates/optimism", default-features = false }
 
 # misc
 auto_impl = "1"
