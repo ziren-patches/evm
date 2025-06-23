@@ -5,7 +5,6 @@ use crate::{
     Evm,
 };
 use alloc::string::ToString;
-use alloy_eips::eip2935::HISTORY_STORAGE_ADDRESS;
 use alloy_hardforks::EthereumHardforks;
 use alloy_primitives::B256;
 use revm::context_interface::result::ResultAndState;
@@ -38,9 +37,15 @@ pub(crate) fn transact_blockhashes_contract_call<Halt>(
         return Ok(None);
     }
 
+    let contract = if cfg!(feature = "goat") {
+        alloy_eips::eip2935::GOAT_HISTORY_STORAGE_ADDRESS
+    } else {
+        alloy_eips::eip2935::HISTORY_STORAGE_ADDRESS
+    };
+
     let res = match evm.transact_system_call(
         alloy_eips::eip4788::SYSTEM_ADDRESS,
-        HISTORY_STORAGE_ADDRESS,
+        contract,
         parent_block_hash.0.into(),
     ) {
         Ok(res) => res,
