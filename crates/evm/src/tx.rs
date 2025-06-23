@@ -219,7 +219,7 @@ impl FromTxWithEncoded<TxEip7702> for TxEnv {
 
 impl FromRecoveredTx<TxGoat> for TxEnv {
     fn from_recovered_tx(tx: &TxGoat, caller: Address) -> Self {
-        let TxGoat { module, action, nonce, input, inner: _ } = tx;
+        let TxGoat { module, action, nonce, input, inner: _, chain_id } = tx;
         Self {
             tx_type: tx.ty(),
             caller,
@@ -228,6 +228,7 @@ impl FromRecoveredTx<TxGoat> for TxEnv {
             kind: tx.to().into(),
             data: input.clone(),
             nonce: *nonce,
+            chain_id: Some(*chain_id),
             ..Default::default()
         }
     }
