@@ -90,8 +90,12 @@ where
         evm: &mut impl Evm<DB: DatabaseCommit>,
         is_goat_chain: bool,
     ) -> Result<(), BlockExecutionError> {
-        let result_and_state =
-            eip2935::transact_blockhashes_contract_call(&self.spec, parent_block_hash, evm, is_goat_chain)?;
+        let result_and_state = eip2935::transact_blockhashes_contract_call(
+            &self.spec,
+            parent_block_hash,
+            evm,
+            is_goat_chain,
+        )?;
 
         if let Some(res) = result_and_state {
             if let Some(hook) = &mut self.hook {

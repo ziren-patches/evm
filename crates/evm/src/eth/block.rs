@@ -117,8 +117,10 @@ where
         )?;
 
         if !is_goat_chain {
-            self.system_caller
-                .apply_beacon_root_contract_call(self.ctx.parent_beacon_block_root, &mut self.evm)?;
+            self.system_caller.apply_beacon_root_contract_call(
+                self.ctx.parent_beacon_block_root,
+                &mut self.evm,
+            )?;
         }
 
         Ok(())
