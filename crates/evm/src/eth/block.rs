@@ -25,6 +25,9 @@ use revm::{
     DatabaseCommit, Inspector,
 };
 
+const GOAT_CHAIN_ID: u64 = 2345;
+const GOAT_TESTNET_CHAIN_ID: u64 = 48816;
+
 /// Context for Ethereum block execution.
 #[derive(Debug, Clone)]
 pub struct EthBlockExecutionCtx<'a> {
@@ -95,16 +98,28 @@ where
     type Receipt = R::Receipt;
     type Evm = E;
 
+    fn is_goat_chain(&self) -> bool {
+        self.chain_id == GOAT_CHAIN_ID || self.chain_id == GOAT_TESTNET_CHAIN_ID
+    }
+
     fn apply_pre_execution_changes(&mut self) -> Result<(), BlockExecutionError> {
+        let is_goat_chain = self.is_goat_chain();
+
         // Set state clear flag if the block is after the Spurious Dragon hardfork.
         let state_clear_flag =
             self.spec.is_spurious_dragon_active_at_block(self.evm.block().number);
         self.evm.db_mut().set_state_clear_flag(state_clear_flag);
 
-        self.system_caller.apply_blockhashes_contract_call(self.ctx.parent_hash, &mut self.evm)?;
-        #[cfg(not(feature = "goat"))]
-        self.system_caller
-            .apply_beacon_root_contract_call(self.ctx.parent_beacon_block_root, &mut self.evm)?;
+        self.system_caller.apply_blockhashes_contract_call(
+            self.ctx.parent_hash,
+            &mut self.evm,
+            is_goat_chain,
+        )?;
+
+        if !is_goat_chain {
+            self.system_caller
+                .apply_beacon_root_contract_call(self.ctx.parent_beacon_block_root, &mut self.evm)?;
+        }
 
         Ok(())
     }

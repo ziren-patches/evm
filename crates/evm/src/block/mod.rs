@@ -137,6 +137,11 @@ pub trait BlockExecutor {
 
     /// Sets the chain ID for the executor.
     fn set_chain_id(&mut self, _chain_id: u64) {}
+
+    /// Is goat chain
+    fn is_goat_chain(&self) -> bool {
+        false
+    }
 }
 
 /// A helper trait encapsulating the constraints on [`BlockExecutor`] produced by the

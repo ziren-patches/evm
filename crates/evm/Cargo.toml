@@ -34,7 +34,6 @@ serde_json.workspace = true
 
 [features]
 default = ["std"]
-goat = []
 std = [
 	"alloy-primitives/std",
 	"revm/std",

@@ -26,6 +26,7 @@ pub(crate) fn transact_blockhashes_contract_call<Halt>(
     spec: impl EthereumHardforks,
     parent_block_hash: B256,
     evm: &mut impl Evm<HaltReason = Halt>,
+    is_goat_chain: bool,
 ) -> Result<Option<ResultAndState<Halt>>, BlockExecutionError> {
     if !spec.is_prague_active_at_timestamp(evm.block().timestamp) {
         return Ok(None);
@@ -37,7 +38,7 @@ pub(crate) fn transact_blockhashes_contract_call<Halt>(
         return Ok(None);
     }
 
-    let contract = if cfg!(feature = "goat") {
+    let contract = if is_goat_chain {
         alloy_eips::eip2935::GOAT_HISTORY_STORAGE_ADDRESS
     } else {
         alloy_eips::eip2935::HISTORY_STORAGE_ADDRESS

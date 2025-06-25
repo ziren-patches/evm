@@ -55,7 +55,7 @@ where
         header: impl BlockHeader,
         evm: &mut impl Evm<DB: DatabaseCommit>,
     ) -> Result<(), BlockExecutionError> {
-        self.apply_blockhashes_contract_call(header.parent_hash(), evm)?;
+        self.apply_blockhashes_contract_call(header.parent_hash(), evm, false)?;
         self.apply_beacon_root_contract_call(header.parent_beacon_block_root(), evm)?;
 
         Ok(())
@@ -88,9 +88,10 @@ where
         &mut self,
         parent_block_hash: B256,
         evm: &mut impl Evm<DB: DatabaseCommit>,
+        is_goat_chain: bool,
     ) -> Result<(), BlockExecutionError> {
         let result_and_state =
-            eip2935::transact_blockhashes_contract_call(&self.spec, parent_block_hash, evm)?;
+            eip2935::transact_blockhashes_contract_call(&self.spec, parent_block_hash, evm, is_goat_chain)?;
 
         if let Some(res) = result_and_state {
             if let Some(hook) = &mut self.hook {
