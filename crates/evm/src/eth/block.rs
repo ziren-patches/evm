@@ -50,6 +50,8 @@ pub struct EthBlockExecutionCtx<'a> {
     pub subblock_gas_limit: u64,
     /// The gas used in the previous subblocks.
     pub starting_gas_used: u64,
+    /// Cumulative gas used in the block.
+    pub cumulative_gas_used: u64,
 }
 
 /// Block executor for Ethereum.
@@ -131,7 +133,7 @@ where
     ) -> Result<u64, BlockExecutionError> {
         // The sum of the transaction's gas limit, Tg, and the gas utilized in this block prior,
         // must be no greater than the block's gasLimit.
-        let block_available_gas = self.evm.block().gas_limit - self.gas_used;
+        let block_available_gas = self.evm.block().gas_limit - self.ctx.cumulative_gas_used;
 
         if tx.tx().gas_limit() > block_available_gas {
             return Err(BlockValidationError::TransactionGasLimitMoreThanAvailableBlockGas {
@@ -142,8 +144,8 @@ where
         }
 
         if self.ctx.subblock_gas_limit != 0
-            && self.gas_used - self.ctx.starting_gas_used != 0
-            && tx.tx().gas_limit() + self.gas_used > self.ctx.subblock_gas_limit
+            && self.ctx.cumulative_gas_used - self.ctx.starting_gas_used != 0
+            && tx.tx().gas_limit() + self.ctx.cumulative_gas_used > self.ctx.subblock_gas_limit
         {
             return Ok(0);
         }
@@ -162,7 +164,7 @@ where
         let gas_used = result.gas_used();
 
         // append gas used
-        self.gas_used += gas_used;
+        self.ctx.cumulative_gas_used += gas_used;
 
         // Push transaction changeset and calculate header bloom filter for receipt.
         self.receipts.push(self.receipt_builder.build_receipt(ReceiptBuilderCtx {
@@ -170,7 +172,7 @@ where
             evm: &self.evm,
             result,
             state: &state,
-            cumulative_gas_used: self.gas_used,
+            cumulative_gas_used: self.ctx.cumulative_gas_used,
         }));
 
         // Commit the state changes.
@@ -178,7 +180,7 @@ where
 
         // make sure to execute at least one transaction.
         if self.ctx.subblock_gas_limit != 0 {
-            if self.gas_used > self.ctx.subblock_gas_limit {
+            if self.ctx.cumulative_gas_used > self.ctx.subblock_gas_limit {
                 return Ok(0);
             }
         }
@@ -255,7 +257,7 @@ where
 
         Ok((
             self.evm,
-            BlockExecutionResult { receipts: self.receipts, requests, gas_used: self.gas_used },
+            BlockExecutionResult { receipts: self.receipts, requests, gas_used: self.ctx.cumulative_gas_used },
         ))
     }
 
