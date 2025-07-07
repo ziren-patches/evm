@@ -41,8 +41,8 @@ alloy-op-evm = { version = "0.4.0", path = "crates/op-evm", default-features = f
 # alloy
 alloy-eip2124 = { version = "0.2", default-features = false }
 alloy-chains = { version = "0.2.0", default-features = false }
-alloy-eips = { git = "https://github.com/ziren-patches/alloy", branch = "patch-0.14.0-goat", default-features = false }
-alloy-consensus = { git = "https://github.com/ziren-patches/alloy", branch = "patch-0.14.0-goat", default-features = false }
+alloy-eips = { git = "https://github.com/ziren-patches/alloy", branch = "patch-0.14.0", default-features = false }
+alloy-consensus = { git = "https://github.com/ziren-patches/alloy", branch = "patch-0.14.0", default-features = false }
 # alloy-eips = { path = "../alloy/crates/eips", default-features = false }
 # alloy-consensus = { path = "../alloy/crates/consensus", default-features = false }
 alloy-primitives = { version = "1.0.0", default-features = false }
@@ -51,12 +51,12 @@ alloy-hardforks = { version = "0.2" }
 
 # op-alloy
 alloy-op-hardforks = { version = "0.2" }
-op-alloy-consensus = { git = "https://github.com/ziren-patches/op-alloy", branch = "patch-0.13.0-goat", default-features = false }
+op-alloy-consensus = { git = "https://github.com/ziren-patches/op-alloy", branch = "patch-0.13.0", default-features = false }
 # op-alloy-consensus = { path = "../op-alloy/crates/consensus", default-features = false }
 
 # revm
-revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-22.0.0-goat", default-features = false }
-op-revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-22.0.0-goat", default-features = false }
+revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-22.0.0", default-features = false }
+op-revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-22.0.0", default-features = false }
 # revm = { path = "../revm/crates/revm", default-features = false }
 # op-revm = { path = "../revm/crates/optimism", default-features = false }
 
