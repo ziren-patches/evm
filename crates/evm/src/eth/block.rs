@@ -25,6 +25,9 @@ use revm::{
     DatabaseCommit, Inspector,
 };
 
+const GOAT_CHAIN_ID: u64 = 2345;
+const GOAT_TESTNET_CHAIN_ID: u64 = 48816;
+
 /// Context for Ethereum block execution.
 #[derive(Debug, Clone)]
 pub struct EthBlockExecutionCtx<'a> {
@@ -57,6 +60,8 @@ pub struct EthBlockExecutor<'a, Evm, Spec, R: ReceiptBuilder> {
     receipts: Vec<R::Receipt>,
     /// Total gas used by transactions in this block.
     gas_used: u64,
+    /// Chain ID.
+    chain_id: u64,
 }
 
 impl<'a, Evm, Spec, R> EthBlockExecutor<'a, Evm, Spec, R>
@@ -74,6 +79,7 @@ where
             system_caller: SystemCaller::new(spec.clone()),
             spec,
             receipt_builder,
+            chain_id: 0,
         }
     }
 }
@@ -92,15 +98,30 @@ where
     type Receipt = R::Receipt;
     type Evm = E;
 
+    fn is_goat_chain(&self) -> bool {
+        self.chain_id == GOAT_CHAIN_ID || self.chain_id == GOAT_TESTNET_CHAIN_ID
+    }
+
     fn apply_pre_execution_changes(&mut self) -> Result<(), BlockExecutionError> {
+        let is_goat_chain = self.is_goat_chain();
+
         // Set state clear flag if the block is after the Spurious Dragon hardfork.
         let state_clear_flag =
             self.spec.is_spurious_dragon_active_at_block(self.evm.block().number);
         self.evm.db_mut().set_state_clear_flag(state_clear_flag);
 
-        self.system_caller.apply_blockhashes_contract_call(self.ctx.parent_hash, &mut self.evm)?;
-        self.system_caller
-            .apply_beacon_root_contract_call(self.ctx.parent_beacon_block_root, &mut self.evm)?;
+        self.system_caller.apply_blockhashes_contract_call(
+            self.ctx.parent_hash,
+            &mut self.evm,
+            is_goat_chain,
+        )?;
+
+        if !is_goat_chain {
+            self.system_caller.apply_beacon_root_contract_call(
+                self.ctx.parent_beacon_block_root,
+                &mut self.evm,
+            )?;
+        }
 
         Ok(())
     }
@@ -127,6 +148,7 @@ where
             .evm
             .transact(tx)
             .map_err(|err| BlockExecutionError::evm(err, tx.tx().trie_hash()))?;
+
         self.system_caller
             .on_state(StateChangeSource::Transaction(self.receipts.len()), &result_and_state.state);
         let ResultAndState { result, state } = result_and_state;
@@ -151,6 +173,10 @@ where
         self.evm.db_mut().commit(state);
 
         Ok(gas_used)
+    }
+
+    fn set_chain_id(&mut self, chain_id: u64) {
+        self.chain_id = chain_id;
     }
 
     fn finish(
