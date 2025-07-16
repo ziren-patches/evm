@@ -182,7 +182,9 @@ where
     fn finish(
         mut self,
     ) -> Result<(Self::Evm, BlockExecutionResult<R::Receipt>), BlockExecutionError> {
-        let requests = if self.spec.is_prague_active_at_timestamp(self.evm.block().timestamp) {
+        let requests = if self.is_goat_chain() {
+            Requests::default()
+        } else if self.spec.is_prague_active_at_timestamp(self.evm.block().timestamp) {
             // Collect all EIP-6110 deposits
             let deposit_requests =
                 eip6110::parse_deposits_from_receipts(&self.spec, &self.receipts)?;
