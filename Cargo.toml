@@ -53,8 +53,11 @@ alloy-op-hardforks = { version = "0.2" }
 op-alloy-consensus = { version = "0.18", default-features = false }
 
 # revm
-revm = { version = "26.0.0", default-features = false }
-op-revm = { version = "7.0.0", default-features = false }
+# revm = { version = "26.0.0", default-features = false }
+# op-revm = { version = "7.0.0", default-features = false }
+
+revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-27.0.2", default-features = false }
+op-revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-27.0.2", default-features = false }
 
 # misc
 auto_impl = "1"
