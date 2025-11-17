@@ -33,6 +33,22 @@ pub struct EthBlockExecutionCtx<'a> {
     pub ommers: &'a [Header],
     /// Block withdrawals.
     pub withdrawals: Option<Cow<'a, Withdrawals>>,
+
+    /// number of transactions in the block.
+    pub number_of_transactions: usize,
+    /// Whether to preprocess the block.
+    pub is_first_subblock: bool,
+    /// Whether to postprocess the block.
+    pub is_last_subblock: bool,
+    /// The gas limit for the subblock. If zero, no limit is enforced.
+    ///
+    /// The reth-processor host executor uses this to split up the subblocks. The reth-processor
+    /// client executor does not.
+    pub subblock_gas_limit: u64,
+    /// The gas used in the previous subblocks.
+    pub starting_gas_used: u64,
+    /// Cumulative gas used in the block.
+    pub cumulative_gas_used: u64,
 }
 
 /// Block executor for Ethereum.
@@ -95,9 +111,14 @@ where
             self.spec.is_spurious_dragon_active_at_block(self.evm.block().number.saturating_to());
         self.evm.db_mut().set_state_clear_flag(state_clear_flag);
 
-        self.system_caller.apply_blockhashes_contract_call(self.ctx.parent_hash, &mut self.evm)?;
-        self.system_caller
-            .apply_beacon_root_contract_call(self.ctx.parent_beacon_block_root, &mut self.evm)?;
+        if self.ctx.is_first_subblock {
+            self.system_caller
+                .apply_blockhashes_contract_call(self.ctx.parent_hash, &mut self.evm)?;
+            self.system_caller.apply_beacon_root_contract_call(
+                self.ctx.parent_beacon_block_root,
+                &mut self.evm,
+            )?;
+        }
 
         Ok(())
     }
@@ -108,7 +129,7 @@ where
     ) -> Result<ResultAndState<<Self::Evm as Evm>::HaltReason>, BlockExecutionError> {
         // The sum of the transaction's gas limit, Tg, and the gas utilized in this block prior,
         // must be no greater than the block's gasLimit.
-        let block_available_gas = self.evm.block().gas_limit - self.gas_used;
+        let block_available_gas = self.evm.block().gas_limit - self.ctx.cumulative_gas_used;
 
         if tx.tx().gas_limit() > block_available_gas {
             return Err(BlockValidationError::TransactionGasLimitMoreThanAvailableBlockGas {
@@ -130,6 +151,13 @@ where
         output: ResultAndState<<Self::Evm as Evm>::HaltReason>,
         tx: impl ExecutableTx<Self>,
     ) -> Result<u64, BlockExecutionError> {
+        if self.ctx.subblock_gas_limit != 0
+            && self.ctx.cumulative_gas_used - self.ctx.starting_gas_used != 0
+            && tx.tx().gas_limit() + self.ctx.cumulative_gas_used > self.ctx.subblock_gas_limit
+        {
+            return Ok(u64::MAX);
+        }
+
         let ResultAndState { result, state } = output;
 
         self.system_caller.on_state(StateChangeSource::Transaction(self.receipts.len()), &state);
@@ -137,7 +165,7 @@ where
         let gas_used = result.gas_used();
 
         // append gas used
-        self.gas_used += gas_used;
+        self.ctx.cumulative_gas_used += gas_used;
 
         // Push transaction changeset and calculate header bloom filter for receipt.
         self.receipts.push(self.receipt_builder.build_receipt(ReceiptBuilderCtx {
@@ -145,11 +173,18 @@ where
             evm: &self.evm,
             result,
             state: &state,
-            cumulative_gas_used: self.gas_used,
+            cumulative_gas_used: self.ctx.cumulative_gas_used,
         }));
 
         // Commit the state changes.
         self.evm.db_mut().commit(state);
+
+        // make sure to execute at least one transaction.
+        if self.ctx.subblock_gas_limit != 0 {
+            if self.ctx.cumulative_gas_used > self.ctx.subblock_gas_limit {
+                return Ok(u64::MAX);
+            }
+        }
 
         Ok(gas_used)
     }
@@ -177,51 +212,60 @@ where
             Requests::default()
         };
 
-        let mut balance_increments = post_block_balance_increments(
-            &self.spec,
-            self.evm.block(),
-            self.ctx.ommers,
-            self.ctx.withdrawals.as_deref(),
-        );
-
-        // Irregular state change at Ethereum DAO hardfork
-        if self
-            .spec
-            .ethereum_fork_activation(EthereumHardfork::Dao)
-            .transitions_at_block(self.evm.block().number.saturating_to())
+        if (self.ctx.subblock_gas_limit != 0
+            && self.receipts.len() == self.ctx.number_of_transactions)
+            || self.ctx.is_last_subblock
         {
-            // drain balances from hardcoded addresses.
-            let drained_balance: u128 = self
-                .evm
+            let mut balance_increments = post_block_balance_increments(
+                &self.spec,
+                self.evm.block(),
+                self.ctx.ommers,
+                self.ctx.withdrawals.as_deref(),
+            );
+
+            // Irregular state change at Ethereum DAO hardfork
+            if self
+                .spec
+                .ethereum_fork_activation(EthereumHardfork::Dao)
+                .transitions_at_block(self.evm.block().number.saturating_to())
+            {
+                // drain balances from hardcoded addresses.
+                let drained_balance: u128 = self
+                    .evm
+                    .db_mut()
+                    .drain_balances(dao_fork::DAO_HARDFORK_ACCOUNTS)
+                    .map_err(|_| BlockValidationError::IncrementBalanceFailed)?
+                    .into_iter()
+                    .sum();
+
+                // return balance to DAO beneficiary.
+                *balance_increments.entry(dao_fork::DAO_HARDFORK_BENEFICIARY).or_default() +=
+                    drained_balance;
+            }
+            // increment balances
+            self.evm
                 .db_mut()
-                .drain_balances(dao_fork::DAO_HARDFORK_ACCOUNTS)
-                .map_err(|_| BlockValidationError::IncrementBalanceFailed)?
-                .into_iter()
-                .sum();
+                .increment_balances(balance_increments.clone())
+                .map_err(|_| BlockValidationError::IncrementBalanceFailed)?;
 
-            // return balance to DAO beneficiary.
-            *balance_increments.entry(dao_fork::DAO_HARDFORK_BENEFICIARY).or_default() +=
-                drained_balance;
+            // call state hook with changes due to balance increments.
+            self.system_caller.try_on_state_with(|| {
+                balance_increment_state(&balance_increments, self.evm.db_mut()).map(|state| {
+                    (
+                        StateChangeSource::PostBlock(StateChangePostBlockSource::BalanceIncrements),
+                        Cow::Owned(state),
+                    )
+                })
+            })?;
         }
-        // increment balances
-        self.evm
-            .db_mut()
-            .increment_balances(balance_increments.clone())
-            .map_err(|_| BlockValidationError::IncrementBalanceFailed)?;
-
-        // call state hook with changes due to balance increments.
-        self.system_caller.try_on_state_with(|| {
-            balance_increment_state(&balance_increments, self.evm.db_mut()).map(|state| {
-                (
-                    StateChangeSource::PostBlock(StateChangePostBlockSource::BalanceIncrements),
-                    Cow::Owned(state),
-                )
-            })
-        })?;
 
         Ok((
             self.evm,
-            BlockExecutionResult { receipts: self.receipts, requests, gas_used: self.gas_used },
+            BlockExecutionResult {
+                receipts: self.receipts,
+                requests,
+                gas_used: self.ctx.cumulative_gas_used,
+            },
         ))
     }
 
