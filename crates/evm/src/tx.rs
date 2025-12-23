@@ -6,7 +6,7 @@
 
 use alloy_consensus::{
     crypto::secp256k1, transaction::Recovered, EthereumTxEnvelope, TxEip1559, TxEip2930, TxEip4844,
-    TxEip7702, TxLegacy,
+    TxEip7702, TxGoat, TxLegacy,
 };
 use alloy_eips::{
     eip2718::WithEncoded,
@@ -252,6 +252,29 @@ impl FromRecoveredTx<TxEip4844> for TxEnv {
     }
 }
 
+impl FromRecoveredTx<TxGoat> for TxEnv {
+    fn from_recovered_tx(tx: &TxGoat, caller: Address) -> Self {
+        let TxGoat { module, action, nonce, input, inner: _, chain_id } = tx;
+        Self {
+            tx_type: tx.ty(),
+            caller,
+            module: *module,
+            action: *action,
+            kind: tx.to().into(),
+            data: input.clone(),
+            nonce: *nonce,
+            chain_id: Some(*chain_id),
+            ..Default::default()
+        }
+    }
+}
+
+impl FromTxWithEncoded<TxGoat> for TxEnv {
+    fn from_encoded_tx(tx: &TxGoat, sender: Address, _encoded: Bytes) -> Self {
+        Self::from_recovered_tx(tx, sender)
+    }
+}
+
 impl FromTxWithEncoded<TxEip4844> for TxEnv {
     fn from_encoded_tx(tx: &TxEip4844, sender: Address, _encoded: Bytes) -> Self {
         Self::from_recovered_tx(tx, sender)
@@ -438,6 +461,7 @@ impl<Eip4844: AsRef<TxEip4844>> FromTxWithEncoded<EthereumTxEnvelope<Eip4844>> f
                 Self::from_encoded_tx(tx.tx().as_ref(), caller, encoded)
             }
             EthereumTxEnvelope::Eip7702(tx) => Self::from_encoded_tx(tx.tx(), caller, encoded),
+            EthereumTxEnvelope::Goat(tx) => Self::from_encoded_tx(tx.tx(), caller, encoded),
         }
     }
 }
@@ -450,6 +474,7 @@ impl<Eip4844: AsRef<TxEip4844>> FromRecoveredTx<EthereumTxEnvelope<Eip4844>> for
             EthereumTxEnvelope::Eip2930(tx) => Self::from_recovered_tx(tx.tx(), sender),
             EthereumTxEnvelope::Eip4844(tx) => Self::from_recovered_tx(tx.tx().as_ref(), sender),
             EthereumTxEnvelope::Eip7702(tx) => Self::from_recovered_tx(tx.tx(), sender),
+            EthereumTxEnvelope::Goat(tx) => Self::from_recovered_tx(tx.tx(), sender),
         }
     }
 }

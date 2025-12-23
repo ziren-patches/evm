@@ -147,10 +147,17 @@ impl<Spec, BlockEnv> From<(CfgEnv<Spec>, BlockEnv)> for EvmEnv<Spec, BlockEnv> {
 pub trait BlockEnvironment: revm::context::Block + Clone + Debug + Send + Sync + 'static {
     /// Returns a mutable reference to the inner [`revm::context::BlockEnv`].
     fn inner_mut(&mut self) -> &mut revm::context::BlockEnv;
+
+    /// Returns an immutable reference to the inner [`revm::context::BlockEnv`].
+    fn inner(&self) -> &revm::context::BlockEnv;
 }
 
 impl BlockEnvironment for BlockEnv {
     fn inner_mut(&mut self) -> &mut revm::context::BlockEnv {
+        self
+    }
+
+    fn inner(&self) -> &revm::context::BlockEnv {
         self
     }
 }
