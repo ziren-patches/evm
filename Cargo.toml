@@ -41,22 +41,30 @@ alloy-op-evm = { version = "0.23.0", path = "crates/op-evm", default-features = 
 # alloy
 alloy-eip2124 = { version = "0.2", default-features = false }
 alloy-chains = { version = "0.2.0", default-features = false }
-alloy-eips = { version = "1.0.34", default-features = false }
-alloy-consensus = { version = "1.0.27", default-features = false }
+alloy-eips = { git = "https://github.com/ziren-patches/alloy", branch = "patch-1.0.41", default-features = false }
+alloy-consensus = { git = "https://github.com/ziren-patches/alloy", branch = "patch-1.0.41", default-features = false }
+# alloy-eips = { path = "../alloy/crates/eips", default-features = false }
+# alloy-consensus = { path = "../alloy/crates/consensus", default-features = false }
 alloy-primitives = { version = "1.0.0", default-features = false }
 alloy-sol-types = { version = "1.0.0", default-features = false }
 alloy-hardforks = { version = "0.4.2" }
-alloy-rpc-types-eth = { version = "1.0.27", default-features = false }
-alloy-rpc-types-engine = { version = "1.0.27", default-features = false }
+alloy-rpc-types-eth = { git = "https://github.com/ziren-patches/alloy", branch = "patch-1.0.41", default-features = false }
+alloy-rpc-types-engine = { git = "https://github.com/ziren-patches/alloy", branch = "patch-1.0.41", default-features = false }
+# alloy-rpc-types-eth = { path = "../alloy/crates/rpc-types-eth", default-features = false }
+# alloy-rpc-types-engine = { path = "../alloy/crates/rpc-types-engine", default-features = false }
 
 # op-alloy
 alloy-op-hardforks = { version = "0.4.2" }
-op-alloy-consensus = { version = "0.22", default-features = false }
-op-alloy-rpc-types-engine = { version = "0.22", default-features = false }
+op-alloy-consensus = { git = "https://github.com/ziren-patches/op-alloy", branch = "patch-0.22.0", default-features = false }
+# op-alloy-consensus = { path = "../op-alloy/crates/consensus", default-features = false }
+op-alloy-rpc-types-engine = { git = "https://github.com/ziren-patches/op-alloy", branch = "patch-0.22.0", default-features = false }
+# op-alloy-rpc-types-engine = { path = "../op-alloy/crates/rpc-types-engine", default-features = false }
 
 # revm
-revm = { version = "31.0.0", default-features = false }
-op-revm = { version = "12.0.0", default-features = false }
+revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-31.0.2", default-features = false }
+op-revm = { git = "https://github.com/ziren-patches/revm", branch = "patch-31.0.2", default-features = false }
+# revm = { path = "../revm/crates/revm", default-features = false }
+# op-revm = { path = "../revm/crates/op-revm", default-features = false }
 
 # misc
 auto_impl = "1"

@@ -108,6 +108,9 @@ pub enum BlockExecutionError {
     /// Internal, i.e. non consensus or validation related Block Executor Errors
     #[error(transparent)]
     Internal(#[from] InternalBlockExecutionError),
+    /// Goat error, transparently wrapping [`anyhow::Error`]
+    #[error(transparent)]
+    Goat(#[from] anyhow::Error),
 }
 
 impl BlockExecutionError {

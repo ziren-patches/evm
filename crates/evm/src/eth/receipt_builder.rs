@@ -59,6 +59,7 @@ impl ReceiptBuilder for AlloyReceiptBuilder {
             TxType::Eip1559 => ReceiptEnvelope::Eip1559(receipt),
             TxType::Eip4844 => ReceiptEnvelope::Eip4844(receipt),
             TxType::Eip7702 => ReceiptEnvelope::Eip7702(receipt),
+            TxType::Goat => ReceiptEnvelope::Goat(receipt),
         }
     }
 }
